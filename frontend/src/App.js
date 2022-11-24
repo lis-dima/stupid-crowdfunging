@@ -21,6 +21,7 @@ const { SystemProgram } = web3;
 
 const App = () => {
   const [wallAddress, setWallAddress] = useState(null);
+  const [campaings, setCampaings] = useState([]);
   const getProvider = () => {
     const connetion = new Connection(network, opts.preflightCommitment);
     const provider = new AnchorProvider(
@@ -68,11 +69,11 @@ const App = () => {
         ],
         program.programId
       );
-      console.log("---BEFORE--- ");
-      console.log("program ", program);
-      console.log("campaign ", campaign.toString());
-      console.log("provider ", provider);
-      await program.rpc.create("campaign name", "camp description", {
+      console.log(
+        "provider.wallet.publicKey ",
+        provider.wallet.publicKey.toString()
+      );
+      await program.rpc.create("campaign name 2", "camp description 2", {
         accounts: {
           campaign,
           user: provider.wallet.publicKey,
@@ -84,14 +85,41 @@ const App = () => {
       console.error("err", err);
     }
   };
-
+  const getCampaings = async () => {
+    const connetion = new Connection(network, opts.preflightCommitment);
+    const provider = getProvider();
+    const program = new Program(idl, programID, provider);
+    Promise.all(
+      (await connetion.getProgramAccounts(programID)).map(async (campaign) => ({
+        ...(await program.account.campaign.fetch(campaign.pubkey)),
+        pubkey: campaign.pubkey,
+      }))
+    ).then((campaigns) => setCampaings(campaigns));
+  };
   const renderNotConnectedContainer = () => (
     <button onClick={connectWallet}>Connect to wallet</button>
   );
 
   const renderCreateCompaign = () => (
-    <button onClick={createCampaign}>Create campaign</button>
+    <>
+      <button onClick={createCampaign}>Create campaign</button>
+      <br />
+      <button onClick={getCampaings}>Get campaigns</button>
+      <hr />
+      {campaings.map((campaing) => (
+        <div key={campaing.pubkey.toString()}>
+          <p>camp ID: {campaing.pubkey.toString()}</p>
+          <p>
+            Balance:{" "}
+            {(campaing.amountDonated / web3.LAMPORTS_PER_SOL).toString()}
+          </p>
+          <p>Name: {campaing.name}</p>
+          <p>Desc: {campaing.descriptiomn}</p>
+        </div>
+      ))}
+    </>
   );
+
   useEffect(() => {
     const onLoad = async () => {
       await checkWalletConnected();
