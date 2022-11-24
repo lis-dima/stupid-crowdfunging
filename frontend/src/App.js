@@ -100,6 +100,24 @@ const App = () => {
     <button onClick={connectWallet}>Connect to wallet</button>
   );
 
+  const donate = async (campaingPublicKey) => {
+    try {
+      const provider = getProvider();
+      const program = new Program(idl, programID, provider);
+      await program.rpc.donate(new BN(0.2 * web3.LAMPORTS_PER_SOL), {
+        accounts: {
+          campaign: campaingPublicKey,
+          user: provider.wallet.publicKey,
+          systemProgram: SystemProgram.programId,
+        },
+      });
+      console.log("Donated some money to: ", campaingPublicKey.toString());
+      getCampaings();
+    } catch (err) {
+      console.error("doante ERR: ", err);
+    }
+  };
+
   const renderCreateCompaign = () => (
     <>
       <button onClick={createCampaign}>Create campaign</button>
@@ -115,6 +133,7 @@ const App = () => {
           </p>
           <p>Name: {campaing.name}</p>
           <p>Desc: {campaing.descriptiomn}</p>
+          <button onClick={() => donate(campaing.pubkey)}>Donate</button>
         </div>
       ))}
     </>
